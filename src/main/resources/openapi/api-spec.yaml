@@ -1,0 +1,297 @@
+openapi: 3.0.3
+info:
+  title: Bank Limits & Transactions Service API
+  description: >
+    Microservice for receiving transactions, converting them to USD using close rates,
+    and controlling monthly expense limits by categories.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local Development Server
+
+tags:
+  - name: Transaction
+    description: API for transaction handling
+  - name: Limit
+    description: API for limit manipulations
+
+paths:
+  /api/v1/transactions:
+    post:
+      tags:
+        - Transaction
+      summary: Receive transaction
+      operationId: processTransaction
+      description: Processes a new transaction, converts the amount to USD, and sets the limit_exceeded flag.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequestDto'
+      responses:
+        '200':
+          description: Transaction successfully processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/client/transactions/exceeded:
+    get:
+      tags:
+        - Transaction
+      summary: Get exceeded transactions
+      operationId: getExceededTransactions
+      description: Returns a list of transactions with limit_exceeded = true, including details of the exceeded limit.
+      parameters:
+        - name: account_from
+          in: query
+          required: true
+          description: Client's bank account number (10 digits)
+          schema:
+            type: string
+            pattern: '^\d{10}$'
+            example: "0000000123"
+      responses:
+        '200':
+          description: List of exceeded transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExceededTransactionResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/client/limits:
+    post:
+      tags:
+        - Limit
+      summary: Set a new limit
+      operationId: setClientLimit
+      description: Sets a new expense limit for the selected category.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetLimitRequestDto'
+      responses:
+        '200':
+          description: Limit successfully set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseLimitDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+    get:
+      tags:
+        - Limit
+      summary: Get client limits
+      operationId: getClientLimits
+      description: Returns the history of set limits for a specific client.
+      parameters:
+        - name: account_from
+          in: query
+          required: true
+          description: Client's bank account number (10 digits)
+          schema:
+            type: string
+            pattern: '^\d{10}$'
+            example: "0000000123"
+      responses:
+        '200':
+          description: List of historical limits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExpenseLimitDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+components:
+  schemas:
+    ExpenseCategory:
+      type: string
+      enum:
+        - product
+        - service
+      description: Expense category
+
+    TransactionRequestDto:
+      type: object
+      required:
+        - account_from
+        - account_to
+        - currency_shortname
+        - sum
+        - expense_category
+        - datetime
+      properties:
+        account_from:
+          type: string
+          pattern: '^\d{10}$'
+          example: "0000000123"
+          description: Client bank account
+        account_to:
+          type: string
+          pattern: '^\d{10}$'
+          example: "9999999999"
+          description: Counterparty bank account
+        currency_shortname:
+          type: string
+          maxLength: 3
+          minLength: 3
+          example: "KZT"
+          description: Account currency (ISO 4217 code)
+        sum:
+          type: number
+          format: double
+          minimum: 0.01
+          example: 10000.45
+          description: Transaction amount
+        expense_category:
+          $ref: '#/components/schemas/ExpenseCategory'
+        datetime:
+          type: string
+          format: date-time
+          example: "2022-01-30T00:00:00+06:00"
+          description: Date and time of the transaction
+
+    TransactionResponseDto:
+      allOf:
+        - $ref: '#/components/schemas/TransactionRequestDto'
+        - type: object
+          properties:
+            sum_usd:
+              type: number
+              format: double
+              example: 23.50
+              description: Transaction amount converted to USD
+            limit_exceeded:
+              type: boolean
+              example: false
+              description: Monthly limit exceeded flag
+
+    SetLimitRequestDto:
+      type: object
+      required:
+        - account_from
+        - expense_category
+        - limit_sum
+      properties:
+        account_from:
+          type: string
+          pattern: '^\d{10}$'
+          example: "0000000123"
+          description: Client bank account
+        expense_category:
+          $ref: '#/components/schemas/ExpenseCategory'
+        limit_sum:
+          type: number
+          format: double
+          minimum: 0.01
+          example: 1000.00
+          description: Monthly limit amount in USD
+
+    ExpenseLimitDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        account_number:
+          type: string
+          example: "0000000123"
+        expense_category:
+          $ref: '#/components/schemas/ExpenseCategory'
+        limit_sum:
+          type: number
+          format: double
+          example: 1000.00
+        limit_currency_shortname:
+          type: string
+          example: "USD"
+        limit_datetime:
+          type: string
+          format: date-time
+          example: "2022-01-10T00:00:00+06:00"
+
+    ExceededTransactionResponseDto:
+      type: object
+      properties:
+        account_from:
+          type: string
+          example: "0000000123"
+        account_to:
+          type: string
+          example: "9999999999"
+        currency_shortname:
+          type: string
+          example: "KZT"
+        sum:
+          type: number
+          format: double
+          example: 10000.45
+        expense_category:
+          $ref: '#/components/schemas/ExpenseCategory'
+        datetime:
+          type: string
+          format: date-time
+          example: "2022-01-30T00:00:00+06:00"
+        limit_sum:
+          type: number
+          format: double
+          example: 1000.00
+        limit_datetime:
+          type: string
+          format: date-time
+          example: "2022-01-10T00:00:00+06:00"
+        limit_currency_shortname:
+          type: string
+          example: "USD"
+
+    ProblemDetail:
+      type: object
+      description: Standardized error format according to RFC 7807
+      properties:
+        type:
+          type: string
+          example: "about:blank"
+        title:
+          type: string
+          example: "Bad Request"
+        status:
+          type: integer
+          example: 400
+        detail:
+          type: string
+          example: "Validation failed for argument [0] in public..."
+        instance:
+          type: string
+          example: "/api/v1/transactions"
+
+  responses:
+    BadRequest:
+      description: Input parameters validation error (Bean Validation)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    InternalError:
+      description: Internal server error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'

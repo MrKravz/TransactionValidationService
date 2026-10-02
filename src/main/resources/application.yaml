@@ -26,7 +26,7 @@ spring:
           enabled: true
 feign:
   client:
-    company:
+    api:
       url: ${API_URL}
 
 resilience4j.circuitbreaker:

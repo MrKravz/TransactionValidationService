@@ -19,7 +19,7 @@ import java.time.ZonedDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TransactionEntity {
+public class BankTransaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -52,5 +52,5 @@ public class TransactionEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "applied_limit_id", foreignKey = @ForeignKey(name = "fk_tx_applied_limit"))
-    private ExpenseLimitEntity appliedLimit;
+    private ExpenseLimit appliedLimit;
 }

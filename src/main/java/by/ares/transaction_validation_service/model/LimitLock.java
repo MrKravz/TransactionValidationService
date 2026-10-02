@@ -14,7 +14,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class LimitLockEntity {
+public class LimitLock {
 
     @EmbeddedId
     private LimitLockId id;

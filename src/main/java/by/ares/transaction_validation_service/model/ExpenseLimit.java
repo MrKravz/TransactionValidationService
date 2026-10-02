@@ -18,7 +18,7 @@ import java.time.ZonedDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ExpenseLimitEntity {
+public class ExpenseLimit {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

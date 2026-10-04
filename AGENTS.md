@@ -6,6 +6,7 @@ Convert transaction amounts into USD using daily close rates (close or previous_
 Track and manage monthly expense limits in USD separately for two categories: product and service (default: 1000.00 USD if no limit is explicitly set).
 Mark transactions exceeding the available monthly limit with a technical flag (limit_exceeded = true) in real time, handling concurrency safely.
 Provide a client-facing API to set new limits, list existing limits, and fetch all transactions that exceeded their limits. 
+
 ## Technology Stack
 - **Language & Runtime:** Java 21 (Virtual Threads enabled, Records, Pattern Matching).
 - **Framework:** Spring Boot 4 (spring-boot-starter-web, Spring Data JPA).
@@ -15,6 +16,7 @@ Provide a client-facing API to set new limits, list existing limits, and fetch a
 - **Mappers & Utilities:** MapStruct, Lombok.
 - **API Documentation & Validation:** Springdoc OpenAPI (Swagger UI), Jakarta Bean Validation (RFC 7807 ProblemDetail).
 - **Testing:** JUnit 5, Mockito, Testcontainers (PostgreSQL). 
+
 ## Business Rules & Domain Logic
 ### Limit Management
 - **Categories:** product (goods) and service (services). Limits and expenses are accumulated separately per category.
@@ -32,6 +34,7 @@ All current time evaluations in service logic and tests must be executed strictl
 - **Resilience:** External API calls are wrapped in Resilience4j Circuit Breaker and Retry mechanisms. If the external provider is completely unreachable, transaction ingestion must not fail or drop data (falling back to cached/latest local rates).
 ### Concurrency & Thread Safety
 Transactions for the same client account may arrive concurrently in parallel threads. Concurrent requests for the same account and category must not read the same remaining limit balance. Concurrency Strategy: Use Pessimistic Locking (SELECT ... FOR UPDATE in PostgreSQL on the limit_locks table) within a single database transaction during payment processing. 
+
 ## REST API Specification
 ### Integration API (Internal Processing)
 * **`POST`** `/api/v1/transactions` — Ingest incoming transactions.
@@ -73,9 +76,19 @@ Transactions for the same client account may arrive concurrently in parallel thr
 "limit_currency_shortname": "USD"
 }
 ```
+
+## Configuration & Deployment
+- **Spring Profiles:** The application strictly separates environments using `application-dev.yaml`, `application-test.yaml`, and `application-prod.yaml`. Common thread/JPA settings reside in `application.yaml`.
+- **Environment Variables:** Production profiles depend strictly on `.env` variables for secrets (`DB_PASSWORD`, `API_KEY`).
+
 ## Database Model (PostgreSQL / Liquibase Schema)
 The database structure is managed via Liquibase YAML migrations (src/main/resources/db/changelog/init-schema.yaml):
 - **expense_limits:** Stores historical expense limit records.
 - **transactions:** Stores ingested transactions with calculated USD equivalents and foreign key applied_limit_id.
 - **currency_rates:** Caches exchange rate close values (KZT/USD, RUB/USD).
 - **limit_locks:** Lock table used for pessimistic concurrency control per (account_number, expense_category).
+
+## Testing Strategy
+- **Infrastructure:** Real PostgreSQL instances are spun up via Testcontainers (`@ServiceConnection`).
+- **External Mocking:** External API calls are stubbed via WireMock in integration tests to prevent network flakiness.
+- **Code Cleanliness:** All magic strings, IDs, dates, and amounts must be centralized in a `TestConstants` utility class.

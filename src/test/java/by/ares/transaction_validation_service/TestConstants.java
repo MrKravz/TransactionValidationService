@@ -1,0 +1,73 @@
+package by.ares.transaction_validation_service;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.ZoneId;
+
+public final class TestConstants {
+    public static final String URI_CREATE_LIMIT = "/api/v1/client/limits";
+    public static final String URI_CREATE_TRANSACTION = "/api/v1/transactions";
+    public static final String URI_GET_EXCEEDED_TRANSACTIONS = "/api/v1/client/transactions/exceeded";
+    public static final String PATH_TIME_SERIES = "/time_series";
+    public static final int WIREMOCK_PORT = 8081;
+    public static final String DOCKER_IMAGE_POSTGRES = "postgres:15";
+    public static final String QUERY_PARAM_SYMBOL = "symbol";
+    public static final String HEADER_CONTENT_TYPE = "Content-Type";
+    public static final String MIME_APPLICATION_JSON = "application/json";
+    public static final int HTTP_STATUS_OK = 200;
+    public static final String ACCOUNT_NUMBER = "0000000123";
+    public static final String ACCOUNT_ALT = "1234567890";
+    public static final String COUNTERPARTY = "9999999999";
+    public static final String CURRENCY_CODE_KZT = "KZT";
+    public static final String CURRENCY_CODE_USD = "USD";
+    public static final String PAIR_KZT_USD = "KZT/USD";
+    public static final String PAIR_USD_KZT = "USD/KZT";
+    public static final String UTC_ZONE = "UTC";
+    public static final ZoneId ZONE_ID = ZoneId.of("Europe/Moscow");
+    public static final String API_KEY = "test-key";
+    public static final String INTERVAL_1DAY = "1day";
+    public static final int OUTPUT_SIZE_5 = 5;
+    public static final String STATUS_OK = "ok";
+    public static final String STATUS_ERROR = "error";
+    public static final Long LIMIT_ID_1 = 1L;
+    public static final Long TX_ID_1 = 1L;
+    public static final Long TX_ID_2 = 2L;
+    public static final Long TX_ID_3 = 3L;
+    public static final Long TX_ID_4 = 4L;
+    public static final BigDecimal LIMIT_1000 = new BigDecimal("1000.00");
+    public static final BigDecimal LIMIT_1500 = new BigDecimal("1500.00");
+    public static final BigDecimal LIMIT_2000 = new BigDecimal("2000.00");
+    public static final String RATE_500_00_STR = "500.00";
+    public static final BigDecimal RATE_480_00 = new BigDecimal("480.00");
+    public static final BigDecimal RATE_481_00 = new BigDecimal("481.00");
+    public static final BigDecimal RATE_479_50 = new BigDecimal("479.50");
+    public static final BigDecimal SUM_100_00 = new BigDecimal("100.00");
+    public static final BigDecimal SUM_500_00 = new BigDecimal("500.00");
+    public static final BigDecimal SUM_1500_00 = new BigDecimal("1500.00");
+    public static final BigDecimal SUM_48000_00 = new BigDecimal("48000.00");
+    public static final BigDecimal SUM_50_000 = new BigDecimal("50000.00");
+    public static final BigDecimal SUM_250_000 = new BigDecimal("250000.00");
+    public static final BigDecimal SUM_300_000 = new BigDecimal("300000.00");
+    public static final BigDecimal SUM_350_000 = new BigDecimal("350000.00");
+    public static final String DATE_TEMPLATE_2022_JAN = "2022-01-%02d";
+    public static final LocalDate TEST_DATE = LocalDate.of(2026, 10, 3);
+    public static final String DATE_OCT_01_STR = "2026-10-01";
+    public static final String DATE_OCT_02_STR = "2026-10-02";
+    public static final LocalDate DATE_OCT_01 = LocalDate.parse(DATE_OCT_01_STR);
+    public static final LocalDate DATE_OCT_02 = LocalDate.parse(DATE_OCT_02_STR);
+    public static final String SYS_TIME_OCT_03 = "2026-10-03T12:00:00Z";
+    public static final String SYS_TIME_JAN_01 = "2022-01-01T12:00:00Z";
+    public static final String SYS_TIME_JAN_10 = "2022-01-10T12:00:00Z";
+    public static final String TX_DATE_JAN_02 = "2022-01-02T10:00:00+03:00";
+    public static final String TX_DATE_JAN_03 = "2022-01-03T10:00:00+03:00";
+    public static final String TX_DATE_JAN_11 = "2022-01-11T10:00:00+03:00";
+    public static final String TX_DATE_JAN_12 = "2022-01-12T10:00:00+03:00";
+    public static final String TX_DATE_JAN_13_FIRST = "2022-01-13T10:00:00+03:00";
+    public static final String TX_DATE_JAN_13_SECOND = "2022-01-13T11:00:00+03:00";
+    public static final String DATE_MATCH_JAN_01 = "2022-01-01";
+    public static final String DATE_MATCH_JAN_10 = "2022-01-10";
+    public static final String LOCALHOST_URL_PREFIX = "http://localhost:";
+    public static final String API_TIMEOUT_MSG = "API connection timeout";
+
+    private TestConstants() {}
+}

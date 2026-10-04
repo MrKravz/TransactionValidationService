@@ -11,18 +11,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 @FeignClient(
         name = "twelve-data-api",
         contextId = "currency-read-client",
-        url = "${feign.client.api.url:}",
+        url = "${feign.client.api.url:https://api.twelvedata.com}",
         fallbackFactory = TwelveDataClientFallback.class
 )
-@Retry(name = "car-read-client")
-@Bulkhead(name = "car-read-client")
+@Retry(name = "twelve-data-api")
+@Bulkhead(name = "twelve-data-api")
 public interface TwelveDataClient {
 
     @GetMapping("/time_series")
-    TwelveDataResponseDto getExchangeRate(
-            @RequestParam("symbol") String symbol,
-            @RequestParam("interval") String interval,
-            @RequestParam("outputsize") int outputsize,
-            @RequestParam("apikey") String apiKey
-    );
+    TwelveDataResponseDto getExchangeRate(@RequestParam("symbol") String symbol, @RequestParam("interval") String interval,
+            @RequestParam("outputsize") int outputSize, @RequestParam("apikey") String apiKey);
 }

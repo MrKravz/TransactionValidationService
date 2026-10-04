@@ -9,7 +9,7 @@ CREATE TABLE expense_limits
     limit_sum                NUMERIC(15, 2)           NOT NULL,
     limit_currency_shortname VARCHAR(3)               NOT NULL DEFAULT 'USD',
     limit_datetime           TIMESTAMP WITH TIME ZONE NOT NULL,
-    CONSTRAINT chk_limit_category CHECK (expense_category IN ('product', 'service'))
+    CONSTRAINT chk_limit_category CHECK (LOWER(expense_category) IN ('product', 'service'))
 );
 
 CREATE INDEX idx_limits_acc_cat_dt
@@ -42,7 +42,7 @@ CREATE TABLE transactions
     limit_exceeded     BOOLEAN                  NOT NULL DEFAULT FALSE,
     applied_limit_id   BIGINT,
     CONSTRAINT fk_tx_applied_limit FOREIGN KEY (applied_limit_id) REFERENCES expense_limits (id),
-    CONSTRAINT chk_trans_category CHECK (expense_category IN ('product', 'service'))
+    CONSTRAINT chk_trans_category CHECK (LOWER(expense_category) IN ('product', 'service'))
 );
 
 CREATE INDEX idx_trans_acc_cat_dt
@@ -51,7 +51,8 @@ CREATE INDEX idx_trans_acc_cat_dt
 
 CREATE TABLE limit_locks
 (
-    account_number   VARCHAR(10) NOT NULL,
-    expense_category VARCHAR(16) NOT NULL,
+    account_number   VARCHAR(10)              NOT NULL,
+    expense_category VARCHAR(16)              NOT NULL,
+    locked_at        TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT pk_limit_locks PRIMARY KEY (account_number, expense_category)
 );

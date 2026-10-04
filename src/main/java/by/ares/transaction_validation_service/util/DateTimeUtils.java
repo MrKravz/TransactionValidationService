@@ -1,5 +1,7 @@
 package by.ares.transaction_validation_service.util;
 
+import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -12,19 +14,16 @@ public final class DateTimeUtils {
     private DateTimeUtils() {
     }
 
-    public static ZonedDateTime toMskZone(ZonedDateTime dateTime) {
-        if (dateTime == null) {
-            return null;
-        }
+    public static ZonedDateTime toZone(@NotNull ZonedDateTime dateTime) {
         return dateTime.withZoneSameInstant(ZONE);
     }
 
-    public static LocalDate extractMskLocalDate(ZonedDateTime dateTime) {
-        return toMskZone(dateTime).toLocalDate();
+    public static LocalDate extractZoneLocalDate(ZonedDateTime dateTime) {
+        return toZone(dateTime).toLocalDate();
     }
 
-    public static ZonedDateTime getStartOfMonthMsk(ZonedDateTime dateTime) {
-        return toMskZone(dateTime)
+    public static ZonedDateTime getZoneStartOfMonth(ZonedDateTime dateTime) {
+        return toZone(dateTime)
                 .with(TemporalAdjusters.firstDayOfMonth())
                 .truncatedTo(ChronoUnit.DAYS);
     }

@@ -13,42 +13,43 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
+
+import static by.ares.transaction_validation_service.util.TransactionValidationServiceConst.DEFAULT_CURRENCY_CODE;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ExpenseLimitServiceImpl implements ExpenseLimitService {
 
-    private final ExpenseLimitRepository expenseLimitEntityRepository;
-    private final ExpenseLimitMapper expenseLimitMapper;
     private final Clock clock;
+    private final ExpenseLimitMapper expenseLimitMapper;
+    private final ExpenseLimitRepository expenseLimitEntityRepository;
 
     @Override
     @Transactional(readOnly = true)
     public List<ExpenseLimitDto> getClientLimits(String accountNumber) {
-        List<ExpenseLimit> limits = expenseLimitEntityRepository
+        var limits = expenseLimitEntityRepository
                 .findAllByAccountNumberOrderByLimitDatetimeDesc(accountNumber);
-
         return expenseLimitMapper.toDtoList(limits);
     }
 
     @Override
     @Transactional
     public ExpenseLimitDto createLimit(SetLimitRequestDto request) {
-        var zonedDateTime = DateTimeUtils.toMskZone(ZonedDateTime.now(clock));
-        ExpenseLimit newLimit = ExpenseLimit.builder()
+        var zonedDateTime = DateTimeUtils.toZone(ZonedDateTime.now(clock));
+        var newLimit = ExpenseLimit.builder()
                 .accountNumber(request.accountFrom())
                 .expenseCategory(request.expenseCategory())
                 .limitSum(request.limitSum())
-                .limitCurrencyShortname("USD")
+                .limitCurrencyShortname(DEFAULT_CURRENCY_CODE)
                 .limitDatetime(zonedDateTime)
                 .build();
-        ExpenseLimit saved = expenseLimitEntityRepository.save(newLimit);
+        var savedLimit = expenseLimitEntityRepository.save(newLimit);
         log.info("New limit created for account {} [Category: {}, Sum: {} USD, Time: {}]",
-                saved.getAccountNumber(), saved.getExpenseCategory(), saved.getLimitSum(), saved.getLimitDatetime());
-        return expenseLimitMapper.toDto(saved);
+                savedLimit.getAccountNumber(), savedLimit.getExpenseCategory(),
+                savedLimit.getLimitSum(), savedLimit.getLimitDatetime());
+        return expenseLimitMapper.toDto(savedLimit);
     }
 }

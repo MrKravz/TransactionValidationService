@@ -30,7 +30,7 @@ import static by.ares.transaction_validation_service.util.TransactionValidationS
 @RequiredArgsConstructor
 public class TransactionProcessingServiceImpl implements TransactionProcessingService {
 
-    private final TransactionRepository transactionEntityRepository;
+    private final TransactionRepository transactionRepository;
     private final ExpenseLimitRepository expenseLimitEntityRepository;
     private final TransactionJooqRepository transactionJooqRepository;
     private final CurrencyRateService currencyRateService;
@@ -42,10 +42,10 @@ public class TransactionProcessingServiceImpl implements TransactionProcessingSe
 
     @Override
     public TransactionResponseDto processTransaction(TransactionRequestDto request) {
-        var txDatetimeMsk = DateTimeUtils.toMskZone(request.datetime());
-        var txDateMsk = DateTimeUtils.extractMskLocalDate(request.datetime());
-        var closestRate = currencyRateService.getCloseRate(request.currencyShortname(), txDateMsk);
-        return self.executeTransactionWithLock(request, txDatetimeMsk, closestRate);
+        var transactionDatetime = DateTimeUtils.toZone(request.datetime());
+        var transactionDate = DateTimeUtils.extractZoneLocalDate(request.datetime());
+        var closestRate = currencyRateService.getCloseRate(request.currencyShortname(), transactionDate);
+        return self.executeTransactionWithLock(request, transactionDatetime, closestRate);
     }
 
     @Override
@@ -55,51 +55,38 @@ public class TransactionProcessingServiceImpl implements TransactionProcessingSe
     }
 
     @Transactional
-    public TransactionResponseDto executeTransactionWithLock(
-            TransactionRequestDto request,
-            ZonedDateTime txDatetimeMsk,
+    public TransactionResponseDto executeTransactionWithLock(TransactionRequestDto request, ZonedDateTime transactionDatetime,
             BigDecimal closestRate) {
-        var sumUsd = request.sum()
-                .multiply(closestRate)
-                .setScale(2, RoundingMode.HALF_UP);
-        var startOfMonth = DateTimeUtils.getStartOfMonthMsk(txDatetimeMsk);
+        var sumUsd = request.sum().divide(closestRate, 2, RoundingMode.HALF_UP);
+        var startOfMonth = DateTimeUtils.getZoneStartOfMonth(transactionDatetime);
         transactionJooqRepository.acquireClientLock(request.accountFrom(), request.expenseCategory());
-        var effectiveLimit = expenseLimitEntityRepository
-                .findFirstByAccountAndCategoryBeforeDate(
-                        request.accountFrom(),
-                        request.expenseCategory(),
-                        txDatetimeMsk
-                )
-                .orElse(null);
+        var effectiveLimit = expenseLimitEntityRepository.findFirstByAccountAndCategoryBeforeDate(request.accountFrom(),
+                        request.expenseCategory(), transactionDatetime).orElse(null);
         var limitSum = effectiveLimit != null ? effectiveLimit.getLimitSum() : DEFAULT_LIMIT;
-        BigDecimal spentThisMonth = transactionEntityRepository.sumUsdByAccountAndCategoryAndDates(
-                request.accountFrom(),
-                request.expenseCategory(),
-                startOfMonth,
-                txDatetimeMsk
-        );
+        BigDecimal spentThisMonth = transactionRepository.sumUsdByAccountAndCategoryAndDates(request.accountFrom(),
+                request.expenseCategory(), startOfMonth, transactionDatetime);
         if (spentThisMonth == null) {
             spentThisMonth = BigDecimal.ZERO;
         }
-        BankTransaction transaction = BankTransaction.builder()
+        BankTransaction newTransaction = BankTransaction.builder()
                 .accountFrom(request.accountFrom())
                 .accountTo(request.accountTo())
                 .currencyShortname(request.currencyShortname())
                 .sum(request.sum())
                 .expenseCategory(request.expenseCategory())
-                .datetime(txDatetimeMsk)
+                .datetime(transactionDatetime)
                 .sumUsd(sumUsd)
                 .limitExceeded(isLimitExceeded(spentThisMonth, sumUsd, limitSum))
                 .appliedLimit(effectiveLimit)
                 .build();
-        BankTransaction savedTx = transactionEntityRepository.save(transaction);
-        log.info("Transaction processed ID: {}, Account: {}, Sum USD: {}, Exceeded: {}",
-                savedTx.getId(), savedTx.getAccountFrom(), savedTx.getSumUsd(), savedTx.isLimitExceeded());
-        return transactionMapper.toResponseDto(savedTx);
+        BankTransaction savedTransaction = transactionRepository.save(newTransaction);
+        log.info("Transaction processed ID: {}, Account: {}, Sum USD: {}, Exceeded: {}", savedTransaction.getId(),
+                savedTransaction.getAccountFrom(), savedTransaction.getSumUsd(), savedTransaction.isLimitExceeded());
+        return transactionMapper.toResponseDto(savedTransaction);
     }
 
-    private boolean isLimitExceeded(BigDecimal spentThisMonth, BigDecimal currentTxSumUsd, BigDecimal limitSum) {
-        BigDecimal totalWithCurrent = spentThisMonth.add(currentTxSumUsd);
+    private boolean isLimitExceeded(BigDecimal spendThisMonth, BigDecimal currentTransactionSumUsd, BigDecimal limitSum) {
+        var totalWithCurrent = spendThisMonth.add(currentTransactionSumUsd);
         return totalWithCurrent.compareTo(limitSum) > 0;
     }
 }

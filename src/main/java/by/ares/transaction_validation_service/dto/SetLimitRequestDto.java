@@ -13,11 +13,9 @@ public record SetLimitRequestDto(
         @Pattern(regexp = "^\\d{10}$", message = "account_from must be exactly 10 digits")
         @JsonProperty("account_from")
         String accountFrom,
-
         @NotNull(message = "expense_category is required")
         @JsonProperty("expense_category")
         ExpenseCategory expenseCategory,
-
         @NotNull(message = "limit_sum is required")
         @Positive(message = "limit_sum must be greater than 0")
         @JsonProperty("limit_sum")

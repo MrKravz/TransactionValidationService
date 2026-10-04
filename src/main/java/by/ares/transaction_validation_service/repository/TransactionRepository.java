@@ -1,10 +1,10 @@
 package by.ares.transaction_validation_service.repository;
 
-import by.ares.transaction_validation_service.model.ExpenseCategory;
 import by.ares.transaction_validation_service.model.BankTransaction;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
+import by.ares.transaction_validation_service.model.ExpenseCategory;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -12,5 +12,19 @@ import java.time.ZonedDateTime;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<BankTransaction, Long> {
-    BigDecimal sumUsdByAccountAndCategoryAndDates(@NotNull(message = "account_from is required") @Pattern(regexp = "^\\d{10}$", message = "account_from must be exactly 10 digits") String s, @NotNull(message = "expense_category is required") ExpenseCategory expenseCategory, ZonedDateTime startOfMonth, ZonedDateTime txDatetimeMsk);
+
+    @Query("""
+        SELECT SUM(t.sumUsd) 
+        FROM BankTransaction t 
+        WHERE t.accountFrom = :accountFrom 
+          AND t.expenseCategory = :expenseCategory 
+          AND t.datetime >= :startDate 
+          AND t.datetime <= :endDate
+    """)
+    BigDecimal sumUsdByAccountAndCategoryAndDates(
+            @Param("accountFrom") String accountFrom,
+            @Param("expenseCategory") ExpenseCategory expenseCategory,
+            @Param("startDate") ZonedDateTime startDate,
+            @Param("endDate") ZonedDateTime endDate
+    );
 }

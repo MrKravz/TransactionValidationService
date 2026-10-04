@@ -4,6 +4,7 @@ import by.ares.transaction_validation_service.model.ExpenseCategory;
 import by.ares.transaction_validation_service.model.ExpenseLimit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.ZonedDateTime;
@@ -14,10 +15,16 @@ import java.util.Optional;
 public interface ExpenseLimitRepository extends JpaRepository<ExpenseLimit, Long> {
     List<ExpenseLimit> findAllByAccountNumberOrderByLimitDatetimeDesc(String accountNumber);
 
-    @Query("SELECT e FROM ExpenseLimitEntity e " +
-            "WHERE e.accountNumber = :accountNumber " +
-            "  AND e.expenseCategory = :category " +
-            "  AND e.limitDatetime <= :limitDatetime " +
-            "ORDER BY e.limitDatetime DESC")
-    Optional<ExpenseLimit> findFirstByAccountAndCategoryBeforeDate(String s, ExpenseCategory expenseCategory, ZonedDateTime txDatetimeMsk);
+    @Query("""
+        SELECT l 
+        FROM ExpenseLimit l 
+        WHERE l.accountNumber = :accountNumber 
+          AND l.expenseCategory = :expenseCategory 
+          AND l.limitDatetime <= :txDatetime 
+        ORDER BY l.limitDatetime DESC 
+        LIMIT 1
+    """)
+    Optional<ExpenseLimit> findFirstByAccountAndCategoryBeforeDate(@Param("accountNumber") String accountNumber,
+                                                                   @Param("expenseCategory") ExpenseCategory expenseCategory,
+                                                                   @Param("txDatetime") ZonedDateTime txDatetime);
 }

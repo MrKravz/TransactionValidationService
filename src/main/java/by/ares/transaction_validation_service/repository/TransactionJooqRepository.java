@@ -8,9 +8,10 @@ import org.jooq.DatePart;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
+import static by.ares.transaction_validation_service.util.TransactionValidationServiceConst.*;
 import static org.jooq.impl.DSL.*;
 
 @Repository
@@ -20,46 +21,55 @@ public class TransactionJooqRepository {
     private final DSLContext dsl;
 
     public void acquireClientLock(String accountNumber, ExpenseCategory category) {
-        dsl.insertInto(table("limit_locks"))
-                .set(field("account_number"), accountNumber)
-                .set(field("expense_category"), category.name())
-                .set(field("locked_at"), currentOffsetDateTime())
-                .onConflict(field("account_number"), field("expense_category"))
+        dsl.insertInto(table(TABLE_LIMIT_LOCKS))
+                .set(field(COL_ACCOUNT_NUMBER), accountNumber)
+                .set(field(COL_EXPENSE_CATEGORY), category.name())
+                .set(field(COL_LOCKED_AT), currentOffsetDateTime())
+                .onConflict(field(COL_ACCOUNT_NUMBER), field(COL_EXPENSE_CATEGORY))
                 .doUpdate()
-                .set(field("locked_at"), currentOffsetDateTime())
+                .set(field(COL_LOCKED_AT), currentOffsetDateTime())
                 .execute();
+        dsl.selectFrom(table(TABLE_LIMIT_LOCKS))
+                .where(field(COL_ACCOUNT_NUMBER).eq(accountNumber))
+                .and(field(COL_EXPENSE_CATEGORY).eq(category.name()))
+                .forUpdate()
+                .fetchOne();
     }
 
     public List<ExceededTransactionResponseDto> findExceededTransactionsByAccountNumber(String accountNumber) {
-        var transaction = table("transactions").as("transaction");
-        var limit = table("expense_limits").as("limit");
-        var txDatetimeField = field(transaction.getName() + ".datetime", ZonedDateTime.class);
-        var limitDatetimeField = field(limit.getName() + ".limit_datetime", ZonedDateTime.class);
+        var transaction = table(TABLE_TRANSACTIONS).as(ALIAS_TRANSACTION);
+        var limit = table(TABLE_EXPENSE_LIMITS).as(ALIAS_LIMIT);
+        var txDatetimeField = field(name(ALIAS_TRANSACTION, COL_DATETIME), OffsetDateTime.class);
+        var limitDatetimeField = field(name(ALIAS_LIMIT, COL_LIMIT_DATETIME), OffsetDateTime.class);
         return dsl.select(
-                        field(transaction.getName() + ".account_from", String.class),
-                        field(transaction.getName() + ".account_to", String.class),
-                        field(transaction.getName() + ".currency_shortname", String.class),
-                        field(transaction.getName() + ".sum", BigDecimal.class),
-                        field(transaction.getName() + ".expense_category", String.class),
+                        field(name(ALIAS_TRANSACTION, COL_ACCOUNT_FROM), String.class),
+                        field(name(ALIAS_TRANSACTION, COL_ACCOUNT_TO), String.class),
+                        field(name(ALIAS_TRANSACTION, COL_CURRENCY_SHORTNAME), String.class),
+                        field(name(ALIAS_TRANSACTION, COL_SUM), BigDecimal.class),
+                        field(name(ALIAS_TRANSACTION, COL_EXPENSE_CATEGORY), String.class),
                         txDatetimeField,
-                        coalesce(field(limit.getName() + ".limit_sum", BigDecimal.class), new BigDecimal("1000.00")).as("limit_sum"),
-                        coalesce(limitDatetimeField, trunc(txDatetimeField, DatePart.MONTH)).as("limit_datetime"),
-                        coalesce(field(limit.getName() + ".limit_currency_shortname", String.class), "USD").as("limit_currency_shortname")
+                        coalesce(field(name(ALIAS_LIMIT, COL_LIMIT_SUM), BigDecimal.class), DEFAULT_LIMIT)
+                                .as(COL_LIMIT_SUM),
+                        coalesce(limitDatetimeField, trunc(txDatetimeField, DatePart.MONTH))
+                                .as(COL_LIMIT_DATETIME),
+                        coalesce(field(name(ALIAS_LIMIT, COL_LIMIT_CURRENCY_SHORTNAME), String.class), DEFAULT_CURRENCY_CODE)
+                                .as(COL_LIMIT_CURRENCY_SHORTNAME)
                 )
                 .from(transaction)
-                .leftJoin(limit).on(field(transaction.getName() + ".applied_limit_id", Long.class).eq(field(limit.getName() + ".id", Long.class)))
-                .where(field(transaction.getName() + ".account_from", String.class).eq(accountNumber))
-                .and(field(transaction.getName() + ".limit_exceeded", Boolean.class).isTrue())
-                .orderBy(txDatetimeField.desc())
+                .leftJoin(limit).on(field(name(ALIAS_TRANSACTION, COL_APPLIED_LIMIT_ID), Long.class)
+                        .eq(field(name(ALIAS_LIMIT, COL_ID), Long.class)))
+                .where(field(name(ALIAS_TRANSACTION, COL_ACCOUNT_FROM), String.class).eq(accountNumber))
+                .and(field(name(ALIAS_TRANSACTION, COL_LIMIT_EXCEEDED), Boolean.class).isTrue())
+                .orderBy(txDatetimeField.asc())
                 .fetch(r -> new ExceededTransactionResponseDto(
                         r.value1(),
                         r.value2(),
                         r.value3(),
                         r.value4(),
                         ExpenseCategory.fromCode(r.value5()),
-                        r.value6(),
+                        r.value6() != null ? r.value6().toZonedDateTime() : null,
                         r.value7(),
-                        r.value8(),
+                        r.value8() != null ? r.value8().toZonedDateTime() : null,
                         r.value9()
                 ));
     }

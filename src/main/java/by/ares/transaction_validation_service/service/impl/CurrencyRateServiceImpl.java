@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import static by.ares.transaction_validation_service.util.TransactionValidationServiceConst.DEFAULT_CURRENCY_CODE;
+import static by.ares.transaction_validation_service.util.TransactionValidationServiceConst.FX_RATE_NOT_FOUND_MESSAGE;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -21,10 +24,10 @@ public class CurrencyRateServiceImpl implements CurrencyRateService {
 
     @Override
     public BigDecimal getCloseRate(String currency, LocalDate date) {
-        if ("USD".equalsIgnoreCase(currency)) {
+        if (DEFAULT_CURRENCY_CODE.equalsIgnoreCase(currency)) {
             return BigDecimal.ONE;
         }
-        var pair = currency.toUpperCase() + "/USD";
+        var pair = currency.toUpperCase() + "/" + DEFAULT_CURRENCY_CODE;
         var localRate = currencyRateRepository.findByCurrencyPairAndRateDate(pair, date);
         if (localRate.isPresent()) {
             return localRate.get().getCloseRate();
@@ -32,20 +35,19 @@ public class CurrencyRateServiceImpl implements CurrencyRateService {
         log.warn("Rate for {} on {} not found in DB. Triggering on-the-fly sync.", pair, date);
         try {
             twelveDataSyncService.syncRates(pair);
-            return currencyRateRepository.findByCurrencyPairAndRateDate(pair, date)
-                    .map(CurrencyRate::getCloseRate)
-                    .orElseThrow(() -> new FxRateNotFoundException("API responded successfully, but rate for specific date is missing"));
-
         } catch (Exception e) {
-            return getFallbackRate(pair, date, e);
+            log.error("External API sync failed for {}: {}", pair, e.getMessage());
         }
+        return currencyRateRepository.findByCurrencyPairAndRateDate(pair, date)
+                .map(CurrencyRate::getCloseRate)
+                .orElseGet(() -> getFallbackRate(pair, date));
     }
 
-    private BigDecimal getFallbackRate(String pair, LocalDate date, Exception e) {
-        log.warn("FX API unavailable for {}. Executing Fallback to previous close. Error: {}", pair, e.getMessage());
+    private BigDecimal getFallbackRate(String pair, LocalDate date) {
+        log.warn("FX rate missing for {}. Executing Fallback to previous close.", pair);
         return currencyRateRepository.findTopByCurrencyPairAndRateDateLessThanEqualOrderByRateDateDesc(pair, date)
                 .map(CurrencyRate::getCloseRate)
                 .orElseThrow(() -> new FxRateNotFoundException(
-                        "Critical Error: FX API is down and NO fallback rate found in DB for " + pair));
+                        FX_RATE_NOT_FOUND_MESSAGE + pair));
     }
 }

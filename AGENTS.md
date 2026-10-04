@@ -41,12 +41,12 @@ Transactions for the same client account may arrive concurrently in parallel thr
 ### Request Body:
 ```JSON
 {
-"account_from": "0000000123",
-"account_to": "9999999999",
-"currency_shortname": "KZT",
-"sum": 10000.45,
-"expense_category": "product",
-"datetime": "2022-01-30T00:00:00+06:00"
+  "account_from": "0000000123",
+  "account_to": "9999999999",
+  "currency_shortname": "RUB",
+  "sum": 1500000,
+  "expense_category": "product",
+  "datetime": "2026-10-06T00:00:00+03:00"
 }
 ```
 #### Response: 200 OK (returns processing status and the calculated limit_exceeded flag).
@@ -55,9 +55,9 @@ Transactions for the same client account may arrive concurrently in parallel thr
 ### Request Body:
 ```JSON
 {
-"account_from": "0000000123",
-"expense_category": "product",
-"limit_sum": 1500.00
+  "account_from": "0000000123",
+  "expense_category": "product",
+  "limit_sum": 1500.00
 }
 ```
 * **`GET`** `/api/v1/client/limits?account_from=0000000123` — Fetch all historical limits for a client.
@@ -65,15 +65,15 @@ Transactions for the same client account may arrive concurrently in parallel thr
 ### Response Element:
 ```JSON
 {
-"account_from": "0000000123",
-"account_to": "9999999999",
-"currency_shortname": "KZT",
-"sum": 10000.45,
-"expense_category": "product",
-"datetime": "2022-01-30T00:00:00+06:00",
-"limit_sum": 1000.00,
-"limit_datetime": "2022-01-10T00:00:00+06:00",
-"limit_currency_shortname": "USD"
+  "account_from": "0000000123",
+  "account_to": "9999999999",
+  "currency_shortname": "KZT",
+  "sum": 10000.45,
+  "expense_category": "product",
+  "datetime": "2022-01-30T00:00:00+06:00",
+  "limit_sum": 1000.00,
+  "limit_datetime": "2022-01-10T00:00:00+06:00",
+  "limit_currency_shortname": "USD"
 }
 ```
 

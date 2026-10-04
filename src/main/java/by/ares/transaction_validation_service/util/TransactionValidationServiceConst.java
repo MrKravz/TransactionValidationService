@@ -1,6 +1,7 @@
 package by.ares.transaction_validation_service.util;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.ZoneId;
 
 public final class TransactionValidationServiceConst {
@@ -31,6 +32,8 @@ public final class TransactionValidationServiceConst {
     public static final String COL_LIMIT_SUM = "limit_sum";
     public static final String COL_LIMIT_CURRENCY_SHORTNAME = "limit_currency_shortname";
     public static final String COL_ID = "id";
+    public static final String RATE_KEY_PREFIX = "fx:rate:";
+    public static final Duration RATE_CACHE_TTL = Duration.ofDays(1);
 
     private TransactionValidationServiceConst() {}
 }

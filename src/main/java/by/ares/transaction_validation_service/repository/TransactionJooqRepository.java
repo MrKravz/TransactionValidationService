@@ -29,11 +29,6 @@ public class TransactionJooqRepository {
                 .doUpdate()
                 .set(field(COL_LOCKED_AT), currentOffsetDateTime())
                 .execute();
-        dsl.selectFrom(table(TABLE_LIMIT_LOCKS))
-                .where(field(COL_ACCOUNT_NUMBER).eq(accountNumber))
-                .and(field(COL_EXPENSE_CATEGORY).eq(category.name()))
-                .forUpdate()
-                .fetchOne();
     }
 
     public List<ExceededTransactionResponseDto> findExceededTransactionsByAccountNumber(String accountNumber) {

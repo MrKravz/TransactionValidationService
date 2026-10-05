@@ -2,6 +2,17 @@ spring:
   application:
     name: TransactionValidationService
 
+  ai:
+    mcp:
+      server:
+        enabled: true
+        name: client-api-mcp-server
+        version: 1.0.0
+        transport: sse
+        sse:
+          path: /mcp/sse
+          message-path: /mcp/message
+
   threads:
     virtual:
       enabled: true

@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "postgres-readonly": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "${DB_READONLY_URL:-postgresql://localhost:5433/transaction_validation_service_db}"
+      ],
+      "env": {
+        "PGUSER": "${DB_READONLY_USER:-readonly_user}",
+        "PGPASSWORD": "${DB_READONLY_PASSWORD}",
+        "PGSSLMODE": "disable"
+      }
+    },
+    "client-api-mcp": {
+      "serverUrl": "http://localhost:8080/mcp/sse"
+    }
+  }
+}

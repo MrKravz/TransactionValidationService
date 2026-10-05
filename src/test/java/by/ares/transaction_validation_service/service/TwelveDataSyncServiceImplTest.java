@@ -5,6 +5,7 @@ import by.ares.transaction_validation_service.exception.FxRateNotFoundException;
 import by.ares.transaction_validation_service.feign.TwelveDataClient;
 import by.ares.transaction_validation_service.model.CurrencyRate;
 import by.ares.transaction_validation_service.repository.CurrencyRateRepository;
+import by.ares.transaction_validation_service.service.impl.CurrencyRateStorageService;
 import by.ares.transaction_validation_service.service.impl.TwelveDataSyncServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,8 @@ class TwelveDataSyncServiceImplTest {
     private CurrencyRateRepository currencyRateRepository;
     @Mock
     private RateCachingService cachingService;
+    @Mock
+    private CurrencyRateStorageService currencyRateStorageService;
 
     @InjectMocks
     private TwelveDataSyncServiceImpl syncService;
@@ -46,7 +49,6 @@ class TwelveDataSyncServiceImplTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(syncService, "apiKey", API_KEY);
-        ReflectionTestUtils.setField(syncService, "self", syncService);
     }
 
     @Test
@@ -69,8 +71,10 @@ class TwelveDataSyncServiceImplTest {
         );
         when(twelveDataClient.getExchangeRate(PAIR_USD_KZT, INTERVAL_1DAY, OUTPUT_SIZE_5, API_KEY)).thenReturn(response);
         when(currencyRateRepository.findExistingDates(eq(PAIR_KZT_USD), anyList())).thenReturn(Set.of(DATE_OCT_02));
+
         syncService.syncRates(PAIR_KZT_USD);
-        verify(currencyRateRepository).saveAll(ratesCaptor.capture());
+
+        verify(currencyRateStorageService).saveCurrencyRates(ratesCaptor.capture(), eq(PAIR_KZT_USD));
         Set<CurrencyRate> savedRates = ratesCaptor.getValue();
         assertEquals(1, savedRates.size());
         assertEquals(DATE_OCT_01, savedRates.iterator().next().getRateDate());
@@ -84,7 +88,7 @@ class TwelveDataSyncServiceImplTest {
                 INTERVAL_1DAY), Collections.emptyList(), STATUS_ERROR);
         when(twelveDataClient.getExchangeRate(PAIR_USD_KZT, INTERVAL_1DAY, OUTPUT_SIZE_5, API_KEY)).thenReturn(emptyResponse);
         assertThrows(FxRateNotFoundException.class, () -> syncService.syncRates(PAIR_KZT_USD));
-        verify(currencyRateRepository, never()).saveAll(any());
+        verify(currencyRateStorageService, never()).saveCurrencyRates(any(), any());
         verifyNoInteractions(cachingService);
     }
 
@@ -92,7 +96,7 @@ class TwelveDataSyncServiceImplTest {
     void shouldThrowExceptionWhenResponseIsNull() {
         when(twelveDataClient.getExchangeRate(PAIR_USD_KZT, INTERVAL_1DAY, OUTPUT_SIZE_5, API_KEY)).thenReturn(null);
         assertThrows(FxRateNotFoundException.class, () -> syncService.syncRates(PAIR_KZT_USD));
-        verify(currencyRateRepository, never()).saveAll(any());
+        verify(currencyRateStorageService, never()).saveCurrencyRates(any(), any());
         verifyNoInteractions(cachingService);
     }
 }

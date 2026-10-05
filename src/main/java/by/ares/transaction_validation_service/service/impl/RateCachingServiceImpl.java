@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -19,24 +18,30 @@ import static by.ares.transaction_validation_service.util.TransactionValidationS
 public class RateCachingServiceImpl implements RateCachingService {
 
     private final StringRedisTemplate redisTemplate;
-    private final ObjectMapper objectMapper;
 
     @Override
     public void cacheRate(String pair, LocalDate date, BigDecimal rate) {
+        if (rate == null) {
+            return;
+        }
         var key = buildRateKey(pair, date);
-        String jsonValue = objectMapper.writeValueAsString(rate);
-        redisTemplate.opsForValue().set(key, jsonValue, RATE_CACHE_TTL);
+        redisTemplate.opsForValue().set(key, rate.toPlainString(), RATE_CACHE_TTL);
         log.debug("Successfully cached rate for key: {}", key);
     }
 
     @Override
     public BigDecimal getCachedRate(String pair, LocalDate date) {
         String key = buildRateKey(pair, date);
-        String jsonValue = redisTemplate.opsForValue().get(key);
-        if (jsonValue == null) {
+        String val = redisTemplate.opsForValue().get(key);
+        if (val == null || val.isBlank()) {
             return null;
         }
-        return objectMapper.readValue(jsonValue, BigDecimal.class);
+        try {
+            return new BigDecimal(val);
+        } catch (NumberFormatException e) {
+            log.warn("Invalid cached BigDecimal value for key {}: {}", key, val);
+            return null;
+        }
     }
 
     private String buildRateKey(String pair, LocalDate date) {

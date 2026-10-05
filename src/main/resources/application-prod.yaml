@@ -5,9 +5,9 @@ server:
 spring:
   data:
     redis:
-      host: ${REDIS_HOST}
+      host: ${CACHE_HOST}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD}
+      password: ${CACHE_PASSWORD}
       timeout: 2000ms
       lettuce:
         pool:

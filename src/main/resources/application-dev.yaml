@@ -4,9 +4,9 @@ server:
 spring:
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
+      host: ${CACHE_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+      password: ${CACHE_PASSWORD:}
 
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/postgres}

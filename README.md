@@ -1,8 +1,10 @@
 # Transaction Validation Service
 
-A high-performance banking microservice built with **Java 21** and **Spring Boot 4** for real-time expense transaction ingestion, currency conversion, monthly limit tracking, and pessimistic concurrency control.
+A high-performance banking microservice built with **Java 21** and **Spring Boot 4** for real-time expense transaction ingestion, currency conversion, monthly limit tracking, and pessimistic concurrency control. Task Estimation: The initial estimation for completing this microservice assignment was 4 days.
 
 ---
+
+
 
 ## Key Features
 
@@ -29,6 +31,15 @@ A high-performance banking microservice built with **Java 21** and **Spring Boot
 | **Testing** | JUnit 5, Mockito, Testcontainers (PostgreSQL, Redis) |
 
 ---
+## Technical Decisions & Strategies
+
+### External API Failure Strategy (Task #3)
+To ensure incoming transactions are not lost if the external currency API (TwelveData) goes down, the service implements a robust fallback strategy using Resilience4j and Redis:
+* **Circuit Breaker & Retry:** Network calls are wrapped in a retry mechanism. If the API becomes unresponsive or times out, the Circuit Breaker opens to prevent system overload.
+* **Fallback Caching:** When fetching exchange rates, the system prioritizes real-time data. If the API fails, a fallback method is triggered to retrieve the most recent successful closing rate stored in the **Redis cache**. This guarantees that the transaction ingestion process is not interrupted by third-party outages.
+
+### Time Zone Declaration (Task #4)
+All transaction dates and limit boundaries (start and end of the month) are strictly calculated using a single, unified time zone: **[INSERT YOUR TIMEZONE HERE, e.g., Europe/Moscow]**. This ensures consistent daily and monthly limit evaluations regardless of the client's local time zone in the incoming payload.
 
 ## Getting Started
 
@@ -46,7 +57,7 @@ Edit `.env` to configure your credentials (`DB_PASSWORD`, `API_KEY`, etc.).
 ### 2. Start Infrastructure Services
 Spin up PostgreSQL and Redis containers using Docker Compose:
 ```bash
-docker compose up -d postgres redis
+docker compose up -d --build
 ```
 
 ### 3. Provision Read-Only DB User (for MCP Agent)
@@ -100,6 +111,15 @@ Execute the unit and integration test suite (spins up PostgreSQL & Redis via Tes
 * **`GET /api/v1/client/transactions/exceeded?account_from=0000000123`** — List transactions that exceeded limits.
 
 ---
+
+## AI in the Project
+
+* **Tool Used:** Antigravity with Google Gemini. I used it primarily to generate unit and integration tests, set up MCP configurations, draft custom AI skills, and scaffold OpenFeign clients for integration with external APIs.
+* **MCP Integration:** Connected both a read-only PostgreSQL MCP server (via Stdio) and a Spring AI MCP server (via SSE at `/mcp/sse`). This enabled the AI to autonomously inspect database schemas to write accurate queries and invoke client domain endpoints (`getClientLimits`, `getExceededTransactions`) during testing and verification without manual HTTP API requests.
+* **Skill Application:** The custom AI skill located at `.agents/skills/postgres-client-mcp/SKILL.md` is applied by referencing the runbook in the prompt or directing the agent to execute tasks using the combined PostgreSQL read-only queries and Spring AI SSE tool calls.
+* **Manual vs. AI Code:** I manually implemented the core business logic (such as pessimistic locking with `SELECT ... FOR UPDATE`, daily/monthly limit boundary calculations, and time zone handling). The AI generated the unit tests, OpenFeign client boilerplate, MCP tool adapters, and skill definition files.
+* **AI Mistakes:** Due to a lack of full initial project context, the AI made two minor errors. First, it attempted to integrate TwelveData API calls using endpoints and features restricted to paid tiers (such as real-time intra-day data). I noticed this when receiving API authorization errors during manual testing, and I fixed it by constraining the Feign client to the free daily close rate endpoints. Second, it generated slightly mismatched test DTO fields relative to the actual database schema, which failed during Liquibase integration tests. I corrected this by providing the exact schema context and aligning the DTO mappings manually.
+* **Custom File Paths:** All MCP configurations and skills strictly follow the standard workspace structure and are located at `.agents/mcp_config.json` and `.agents/skills/postgres-client-mcp/`.
 
 ## Model Context Protocol (MCP) Integration
 

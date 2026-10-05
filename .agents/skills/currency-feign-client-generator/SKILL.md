@@ -1,7 +1,8 @@
-# Skill for generating new feign clients to communicate with different currency providers API
 
-## name: currency-feign-client-generator
-## description: Generates Spring Cloud OpenFeign clients, FallbackFactory classes, and DTOs for currency rate provider integrations. Use when asked to create or generate Feign clients for exchange rate APIs, FX providers, or rate services based on existing project conventions.
+---
+name: currency-feign-client-generator
+description: Generates Spring Cloud OpenFeign clients, FallbackFactory classes, and DTOs for currency rate provider integrations. Use when asked to create or generate Feign clients for exchange rate APIs, FX providers, or rate services based on existing project conventions.
+--- 
 
 ### Currency Feign Client Generator
 A generator for Spring Cloud OpenFeign client layers, fault-tolerance fallback factories (FallbackFactory), and DTOs for currency rate provider integrations, following the project's architectural standards.

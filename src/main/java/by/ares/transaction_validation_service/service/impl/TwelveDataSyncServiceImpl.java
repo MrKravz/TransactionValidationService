@@ -6,7 +6,7 @@ import by.ares.transaction_validation_service.feign.TwelveDataClient;
 import by.ares.transaction_validation_service.model.CurrencyRate;
 import by.ares.transaction_validation_service.repository.CurrencyRateRepository;
 import by.ares.transaction_validation_service.service.RateCachingService;
-import by.ares.transaction_validation_service.service.TwelveDataSyncService;
+import by.ares.transaction_validation_service.service.CurrencySyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +29,7 @@ import static by.ares.transaction_validation_service.util.TransactionValidationS
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TwelveDataSyncServiceImpl implements TwelveDataSyncService {
+public class TwelveDataSyncServiceImpl implements CurrencySyncService {
 
     private final TwelveDataClient twelveDataClient;
     private final CurrencyRateRepository currencyRateRepository;

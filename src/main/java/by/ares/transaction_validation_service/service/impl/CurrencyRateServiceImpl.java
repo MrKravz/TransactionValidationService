@@ -5,7 +5,7 @@ import by.ares.transaction_validation_service.model.CurrencyRate;
 import by.ares.transaction_validation_service.repository.CurrencyRateRepository;
 import by.ares.transaction_validation_service.service.RateCachingService;
 import by.ares.transaction_validation_service.service.CurrencyRateService;
-import by.ares.transaction_validation_service.service.TwelveDataSyncService;
+import by.ares.transaction_validation_service.service.CurrencySyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,7 @@ import static by.ares.transaction_validation_service.util.TransactionValidationS
 public class CurrencyRateServiceImpl implements CurrencyRateService {
 
     private final CurrencyRateRepository currencyRateRepository;
-    private final TwelveDataSyncService twelveDataSyncService;
+    private final CurrencySyncService currencySyncService;
     private final RateCachingService rateCachingService;
 
     @Override
@@ -45,7 +45,7 @@ public class CurrencyRateServiceImpl implements CurrencyRateService {
         }
         log.warn("Rate for {} on {} not found in DB. Triggering on-the-fly sync.", pair, date);
         try {
-            twelveDataSyncService.syncRates(pair);
+            currencySyncService.syncRates(pair);
         }
         catch (Exception e) {
             log.error("External API sync failed for {}: {}", pair, e.getMessage());

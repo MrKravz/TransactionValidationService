@@ -1,6 +1,6 @@
 package by.ares.transaction_validation_service.job;
 
-import by.ares.transaction_validation_service.service.TwelveDataSyncService;
+import by.ares.transaction_validation_service.service.CurrencySyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,7 +13,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CurrencyRateSyncJob {
 
-    private final TwelveDataSyncService syncService;
+    private final CurrencySyncService syncService;
 
     private static final List<String> SUPPORTED_PAIRS = List.of("KZT/USD", "RUB/USD");
 

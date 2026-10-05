@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.redis.testcontainers.RedisContainer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,9 +35,15 @@ public abstract class AbstractIntegrationTest {
     public static final PostgreSQLContainer postgresContainer =
             new PostgreSQLContainer(DockerImageName.parse(DOCKER_IMAGE_POSTGRES));
 
+    @ServiceConnection
+    public static final RedisContainer redisContainer =
+            new RedisContainer(DockerImageName.parse("redis:8-alpine"))
+                    .withExposedPorts(6379);
+
     @BeforeAll
     static void init() {
         postgresContainer.start();
+        redisContainer.start();
         wireMockServer.start();
 
         objectMapper = new ObjectMapper();
@@ -53,6 +60,8 @@ public abstract class AbstractIntegrationTest {
     @AfterAll
     static void stopServices() {
         wireMockServer.stop();
+        redisContainer.stop();
+        postgresContainer.stop();
     }
 
     protected void stubTwelveDataRates() throws Exception {
